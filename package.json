@@ -1,0 +1,36 @@
+{
+  "name": "fallback-automation",
+  "version": "1.0.0-pre",
+  "description": "A project generated from aunty's react project template.",
+  "license": "MIT",
+  "private": true,
+  "contributors": [
+    "Simon Elvery <simon@elvery.net>"
+  ],
+  "aunty": {
+    "type": "react"
+  },
+  "scripts": {
+    "start": "nodemon ./src/api/index.js",
+    "test": "aunty test",
+    "build": "aunty build",
+    "dev": "concurrently \"aunty serve\" \"nodemon server.js\""
+  },
+  "devDependencies": {
+    "@abcnews/aunty": "^10.9.0",
+    "concurrently": "^5.1.0",
+    "nodemon": "^2.0.3",
+    "puppeteer-core": "^2.1.1",
+    "react-test-renderer": "^16.13.1"
+  },
+  "dependencies": {
+    "@abcnews/base-36-props": "^1.1.0",
+    "@hackclub/design-system": "0.0.1-18",
+    "chrome-aws-lambda": "^2.1.1",
+    "express": "^4.17.1",
+    "puppeteer-core": "^2.1.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "styled-components": "^5.1.0"
+  }
+}
