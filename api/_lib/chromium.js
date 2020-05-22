@@ -13,13 +13,19 @@ async function getPage(isDev) {
   return _page;
 }
 
-async function getScreenshot({ url, width = 300, isDev, fileType, selector }) {
-  const viewport = { width, height: 5000, deviceScaleFactor: 2 };
+async function getScreenshots({
+  url,
+  width = 1200,
+  isDev,
+  fileType,
+  selectors
+}) {
+  const viewport = { width: +width, height: 5000, deviceScaleFactor: 2 };
   const page = await getPage(isDev);
   await page.setViewport(viewport);
   await page.goto(url, { waitUntil: "networkidle0" });
 
-  // This little controtion is because a bug in puppeteer prevents element screenshots
+  // This little contortion is because a bug in puppeteer prevents element screenshots
   // when the element is outside the viewport. See: https://github.com/puppeteer/puppeteer/issues/2423
   const fullPage = await page.$("body");
   const fullPageSize = await fullPage.boundingBox();
@@ -27,10 +33,25 @@ async function getScreenshot({ url, width = 300, isDev, fileType, selector }) {
     ...viewport,
     height: parseInt(fullPageSize.height, 10)
   });
-
-  const el = await page.$(selector);
-  const file = await el.screenshot({ fileType });
-  return file;
+  const files = await Promise.all(
+    selectors.map(async selector => {
+      const el = await page.$(selector);
+      const file = await el.screenshot({ fileType });
+      return file;
+    })
+  );
+  return files;
 }
 
-module.exports = { getScreenshot };
+async function getScreenshot({ url, width = 1200, isDev, fileType, selector }) {
+  const arr = await getScreenshots({
+    url,
+    width,
+    isDev,
+    fileType,
+    selectors: [selector]
+  });
+  return arr[0];
+}
+
+module.exports = { getScreenshot, getScreenshots };

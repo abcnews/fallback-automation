@@ -1,97 +1,158 @@
 import React, { useState } from "react";
-import { apiEndpoint } from "../../constants";
-import { encode, decode } from "@abcnews/base-36-props";
+
+import {
+  Button,
+  Field,
+  Container,
+  Heading,
+  IconButton,
+  Link,
+  space
+} from "@hackclub/design-system";
+import ReactModal from "react-modal";
+
 import styled from "styled-components";
+import { useStateValue } from "../../state";
+import { downloadAll, getImageUrl } from "../../utils";
+import {
+  ADD_SELECTOR,
+  REMOVE_SELECTOR,
+  SET_SELECTOR_NAME,
+  SET_SELECTOR_SELECTOR,
+  SET_SELECTOR_SHOW_PREVIEW,
+  SET_SELECTOR_BROWSER_WIDTH
+} from "../../actions";
 
-const Title = styled.h1``;
-const TextInput = styled.input`
-  border: 1px solid #ccc;
-  padding: 0.5em;
-  font-size: 1.2rem;
-  display: block;
+const Cell = styled.div`
+  margin-right: ${space[2]}px;
 `;
 
-const TextAreaInput = styled.textarea`
-  border: 1px solid #ccc;
-  padding: 0.5em;
-  font-size: 1.2rem;
-  display: block;
-  width: 15em;
-  height: 4em;
+const TableField = props => (
+  <Cell>
+    <Field {...props} />
+  </Cell>
+);
+const Row = styled.div`
+  display: flex;
 `;
-
-const Button = styled.button`
-  font-size: 2rem;
-`;
-
-const getImageUrl = (target, selector) => {
-  const url = new URL(window.location.origin);
-  url.pathname = apiEndpoint;
-  url.searchParams.append("url", target);
-  url.searchParams.append("selector", selector);
-  return url.toString();
-};
-
-const download = urls => {
-  const link = document.createElement("a");
-  link.style.display = "none";
-  document.body.appendChild(link);
-  urls.forEach((url, i) => {
-    link.setAttribute("href", url);
-    link.setAttribute("download", `fallback-${i}.png`);
-    link.click();
-  });
-  document.body.removeChild(link);
-};
-
-const getConfig = () => {
-  try {
-    const { url, selectors } = decode(
-      new URL(window.location.href).searchParams.get("props")
-    );
-    return { initialUrl: url, initialSelectors: selectors };
-  } catch (e) {
-    return { initialUrl: "", initialSelectors: [] };
-  }
-};
 
 export default props => {
-  const { initialUrl, initialSelectors } = getConfig();
-  const [url, setUrl] = useState(initialUrl || "");
-  const [selectors, setSelectors] = useState(initialSelectors || []);
-  console.log("selectors", selectors);
-  history.replaceState(null, null, `?props=${encode({ url, selectors })}`);
+  const [{ url, selectors }, dispatch] = useStateValue();
+  const [preview, setPreview] = useState(false);
+
   return (
-    <div className={styles.root}>
-      <Title>Fallback image generator</Title>
-      <p>
-        <label>Story URL</label>
-        <TextInput
-          type="text"
-          name="url"
-          value={url}
-          onChange={({ target: { value } }) => setUrl(value)}
-        />
-      </p>
-      <p>
-        <label>
-          Enter uniquely identifying CSS selectors (one per line) for the
-          elements you want images of
-        </label>
-        <TextAreaInput
-          value={selectors.join("\n")}
-          onChange={({ target: { value } }) => setSelectors(value.split("\n"))}
-        />
-      </p>
+    <Container p={4}>
+      <Heading>Fallback image generator</Heading>
+      <Field
+        label="Source page"
+        name="url"
+        value={url || ""}
+        onChange={({ target: { value } }) =>
+          dispatch({ type: "setUrl", url: value })
+        }
+      />
       <Button
-        type="submit"
         onClick={e => {
           e.preventDefault();
-          download(selectors.map(s => getImageUrl(url, s)));
+          downloadAll(url, selectors);
         }}
       >
         Download
       </Button>
-    </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Selector</th>
+            <th>Width</th>
+          </tr>
+        </thead>
+        <tbody>
+          {selectors.map(({ name, selector, browserWidth }, index) => (
+            <tr key={index}>
+              <td>
+                <TableField
+                  name="name"
+                  value={name}
+                  onChange={({ target: { value } }) =>
+                    dispatch({ type: SET_SELECTOR_NAME, index, name: value })
+                  }
+                />
+              </td>
+              <td>
+                <TableField
+                  name="selector"
+                  value={selector}
+                  onChange={({ target: { value } }) =>
+                    dispatch({
+                      type: SET_SELECTOR_SELECTOR,
+                      index,
+                      selector: value
+                    })
+                  }
+                />
+              </td>
+              <td>
+                <TableField
+                  name="browserWidth"
+                  value={browserWidth}
+                  onChange={({ target: { value } }) =>
+                    dispatch({
+                      type: SET_SELECTOR_BROWSER_WIDTH,
+                      index,
+                      browserWidth: value
+                    })
+                  }
+                />
+              </td>
+              <td>
+                <IconButton
+                  circle={true}
+                  glyph="photo"
+                  color="green"
+                  onClick={() => setPreview({ name, selector, browserWidth })}
+                />
+              </td>
+              <td>
+                <IconButton
+                  circle={true}
+                  glyph="post-cancel"
+                  color="error"
+                  onClick={e => dispatch({ type: REMOVE_SELECTOR, index })}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Button
+        onClick={e => {
+          e.preventDefault();
+          dispatch({ type: ADD_SELECTOR });
+        }}
+      >
+        Add selector
+      </Button>
+      <ReactModal
+        isOpen={preview !== false}
+        onRequestClose={() => setPreview(false)}
+        contentLabel={`Preview of '${preview ? preview.name : "blank"}.png'`}
+        id={"preview"}
+        ariaHideApp={true}
+        shouldFocusAfterRender={true}
+        shouldCloseOnOverlayClick={true}
+        shouldCloseOnEsc={true}
+        shouldReturnFocusAfterClose={true}
+        parentSelector={() => document.body}
+      >
+        <img
+          src={getImageUrl(url, preview.selector, {
+            width: preview.browserWidth
+          })}
+          style={{ maxWidth: "100%" }}
+        />
+        <Button onClick={() => downloadAll(url, [preview])}>Save</Button>
+      </ReactModal>
+    </Container>
   );
 };
