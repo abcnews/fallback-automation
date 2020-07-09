@@ -27,7 +27,7 @@ npm dev
 
 ## Authors
 
-- Simon Elvery ([@drzax](https://githumb.com/drzax))
+- Simon Elvery ([@drzax](https://github.com/drzax))
 
 ## Inspiration
 
