@@ -1,158 +1,155 @@
 import React, { useState } from "react";
+import Page from "../Page";
+import Row from "../Row";
+import Col from "../Col";
+import Modal from "../Modal";
+import EditClip from "../EditClip";
+import logo from "./drop-area.svg";
+import clsx from "clsx";
+import styles from "./styles.scss";
+import { useSelector, useAction } from "@abcnews/tiny-ducks";
 
-import {
-  Button,
-  Field,
-  Container,
-  Heading,
-  IconButton,
-  Link,
-  space
-} from "@hackclub/design-system";
-import ReactModal from "react-modal";
-
-import styled from "styled-components";
-import { useStateValue } from "../../state";
 import { downloadAll, getImageUrl } from "../../utils";
 import {
-  ADD_SELECTOR,
-  REMOVE_SELECTOR,
-  SET_SELECTOR_NAME,
-  SET_SELECTOR_SELECTOR,
-  SET_SELECTOR_SHOW_PREVIEW,
-  SET_SELECTOR_BROWSER_WIDTH
+  clipsSelector,
+  currentClipIndexSelector,
+  currentClipSelector,
+  showPreviewSelector,
+  urlSelector
+} from "../../selectors";
+import {
+  addClipAction,
+  removeClipAction,
+  selectClipAction,
+  setUrlAction,
+  showPreviewAction
 } from "../../actions";
 
-const Cell = styled.div`
-  margin-right: ${space[2]}px;
-`;
-
-const TableField = props => (
-  <Cell>
-    <Field {...props} />
-  </Cell>
-);
-const Row = styled.div`
-  display: flex;
-`;
-
 export default props => {
-  const [{ url, selectors }, dispatch] = useStateValue();
-  const [preview, setPreview] = useState(false);
+  // State
+  const url = useSelector(urlSelector);
+  const clips = useSelector(clipsSelector);
+  const currentClipIndex = useSelector(currentClipIndexSelector);
+  const currentClip = useSelector(currentClipSelector);
+  const shouldShowPreview = useSelector(showPreviewSelector);
+
+  // Actions
+  const setSelectedClip = useAction(selectClipAction);
+  const setUrl = useAction(setUrlAction);
+  const dispatchAddClip = useAction(addClipAction);
+  const addClip = () => {
+    dispatchAddClip();
+    setSelectedClip(clips.length);
+  };
+  const showPreview = useAction(showPreviewAction);
+  const removeClip = useAction(removeClipAction);
 
   return (
-    <Container p={4}>
-      <Heading>Fallback image generator</Heading>
-      <Field
-        label="Source page"
-        name="url"
-        value={url || ""}
-        onChange={({ target: { value } }) =>
-          dispatch({ type: "setUrl", url: value })
-        }
-      />
-      <Button
-        onClick={e => {
-          e.preventDefault();
-          downloadAll(url, selectors);
-        }}
-      >
-        Download
-      </Button>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Selector</th>
-            <th>Width</th>
-          </tr>
-        </thead>
-        <tbody>
-          {selectors.map(({ name, selector, browserWidth }, index) => (
-            <tr key={index}>
-              <td>
-                <TableField
-                  name="name"
-                  value={name}
-                  onChange={({ target: { value } }) =>
-                    dispatch({ type: SET_SELECTOR_NAME, index, name: value })
-                  }
-                />
-              </td>
-              <td>
-                <TableField
-                  name="selector"
-                  value={selector}
-                  onChange={({ target: { value } }) =>
-                    dispatch({
-                      type: SET_SELECTOR_SELECTOR,
-                      index,
-                      selector: value
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <TableField
-                  name="browserWidth"
-                  value={browserWidth}
-                  onChange={({ target: { value } }) =>
-                    dispatch({
-                      type: SET_SELECTOR_BROWSER_WIDTH,
-                      index,
-                      browserWidth: value
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <IconButton
-                  circle={true}
-                  glyph="photo"
-                  color="green"
-                  onClick={() => setPreview({ name, selector, browserWidth })}
-                />
-              </td>
-              <td>
-                <IconButton
-                  circle={true}
-                  glyph="post-cancel"
-                  color="error"
-                  onClick={e => dispatch({ type: REMOVE_SELECTOR, index })}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Button
-        onClick={e => {
-          e.preventDefault();
-          dispatch({ type: ADD_SELECTOR });
-        }}
-      >
-        Add selector
-      </Button>
-      <ReactModal
-        isOpen={preview !== false}
-        onRequestClose={() => setPreview(false)}
-        contentLabel={`Preview of '${preview ? preview.name : "blank"}.png'`}
-        id={"preview"}
-        ariaHideApp={true}
-        shouldFocusAfterRender={true}
-        shouldCloseOnOverlayClick={true}
-        shouldCloseOnEsc={true}
-        shouldReturnFocusAfterClose={true}
-        parentSelector={() => document.body}
-      >
-        <img
-          src={getImageUrl(url, preview.selector, {
-            width: preview.browserWidth
-          })}
-          style={{ maxWidth: "100%" }}
-        />
-        <Button onClick={() => downloadAll(url, [preview])}>Save</Button>
-      </ReactModal>
-    </Container>
+    <>
+      <div className={styles.header}>
+        <Page>
+          <Row>
+            <Col>
+              <img
+                src={logo}
+                width="40"
+                height="40"
+                alt="A pixelated illustration showing a dashed square with an arrow pointing at the centre from bottom right corner"
+              />
+              <p>
+                Take clippings from a website by specifying CSS selectors for
+                the areas you want to clip.
+              </p>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col width={10}>
+              <input
+                className={styles.urlInput}
+                placeholder="https://www.example.com/page-to-clip"
+                type="text"
+                value={url || ""}
+                onChange={({ target: { value } }) => setUrl(value)}
+              />
+            </Col>
+            <Col>
+              <button
+                onClick={e => {
+                  e.preventDefault();
+                  downloadAll(url, clips);
+                }}
+              >
+                Save all
+              </button>
+            </Col>
+          </Row>
+        </Page>
+      </div>
+      <div>
+        <Page>
+          {clips && clips.length > 0 ? (
+            <Row>
+              <Col width={2}>
+                <h2>Clips</h2>
+                <ul className={styles.clipList}>
+                  {clips.map((d, i) => (
+                    <li
+                      key={i}
+                      className={clsx(
+                        styles.clipListItem,
+                        i === currentClipIndex && styles.clipIsSelected
+                      )}
+                      onClick={() => setSelectedClip(i)}
+                    >
+                      {d.name.length ? d.name : `Clip ${i + 1}`}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={addClip}>Add clip</button>
+              </Col>
+
+              <Col width={7}>
+                <h2>Clip {currentClipIndex + 1} settings</h2>
+                <EditClip />
+                {shouldShowPreview && currentClip.selector ? (
+                  <>
+                    <h2>Clip preview</h2>
+                    <img
+                      src={getImageUrl(url, currentClip.selector, {
+                        width: currentClip.browserWidth
+                      })}
+                      style={{ maxWidth: "100%" }}
+                    />
+                  </>
+                ) : null}
+              </Col>
+              <Col width={2}>
+                <h2>Actions</h2>
+                {currentClip?.selector ? (
+                  <button
+                    className={styles.actionButton}
+                    onClick={() => showPreview(!shouldShowPreview)}
+                  >
+                    {shouldShowPreview ? "Hide" : "Show"} Clip
+                  </button>
+                ) : null}
+                <button
+                  className={styles.actionButton}
+                  onClick={() => removeClip(currentClipIndex)}
+                >
+                  Delete
+                </button>
+              </Col>
+            </Row>
+          ) : (
+            <Row>
+              <p> To get started, create a clip. </p>
+              <button onClick={addClip}>Create a clip</button>
+            </Row>
+          )}
+        </Page>
+      </div>
+    </>
   );
 };

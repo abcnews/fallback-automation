@@ -1,16 +1,18 @@
 import React from "react";
 import { render } from "react-dom";
-import App from "./components/App";
-import { ThemeProvider } from "@hackclub/design-system";
 import {
   StateProvider,
-  Reducer,
+  useSelector,
+  useAction,
   makeReducer,
   consoleLoggerMiddleware,
   makeStorageMiddleware
-} from "./state";
+} from "@abcnews/tiny-ducks";
+
+import App from "./components/App";
 import { main } from "./reducers";
 import { getInitialState, saveState } from "./utils";
+import { currentClipReactor } from "./selectors";
 
 const PROJECT_NAME = "fallback-automation";
 const root = document.querySelector(`[data-${PROJECT_NAME}-root]`);
@@ -21,10 +23,12 @@ reducer.use(makeStorageMiddleware(saveState));
 
 function init() {
   render(
-    <StateProvider initialState={getInitialState()} reducer={reducer}>
-      <ThemeProvider>
-        <App projectName={PROJECT_NAME} />
-      </ThemeProvider>
+    <StateProvider
+      initialState={getInitialState()}
+      reducer={reducer}
+      reactors={[currentClipReactor]}
+    >
+      <App projectName={PROJECT_NAME} />
     </StateProvider>,
     root
   );

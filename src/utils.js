@@ -39,14 +39,11 @@ export const downloadAll = (url, selectors) => {
   document.body.removeChild(link);
 };
 
-export const saveState = ({ url, selectors }) => {
+export const saveState = ({ url, clips, currentClipIndex }) => {
   const filteredState = {
     url,
-    selectors: selectors.map(({ name, selector, browserWidth }) => ({
-      name,
-      selector,
-      browserWidth
-    }))
+    currentClipIndex,
+    clips
   };
 
   history.replaceState(null, null, `?state=${encode(filteredState)}`);
