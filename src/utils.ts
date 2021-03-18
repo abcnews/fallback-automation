@@ -1,25 +1,19 @@
 import { apiEndpoint } from "./constants";
 import { encode, decode } from "@abcnews/base-36-props";
-import { main } from "./reducers";
-export const getInitialState = () => {
-  try {
-    return main(
-      decode(new URL(window.location.href).searchParams.get("state")),
-      {}
-    );
-  } catch (e) {
-    return main(undefined, {});
-  }
-};
+import { SavedState } from "./types";
 
-export const getImageUrl = (target, selector, options = {}) => {
+export const getImageUrl = (
+  target: string,
+  selector: string,
+  options: { width?: number } = {}
+) => {
   const url = new URL(window.location.origin);
   url.pathname = apiEndpoint;
   url.searchParams.append("url", target);
   url.searchParams.append("selector", selector);
   ["width"].forEach(option => {
-    if (options.width) {
-      url.searchParams.append("width", options.width);
+    if (typeof options.width !== "undefined") {
+      url.searchParams.append("width", String(options.width));
     }
   });
   return url.toString();
@@ -39,12 +33,16 @@ export const downloadAll = (url, selectors) => {
   document.body.removeChild(link);
 };
 
-export const saveState = ({ url, clips, currentClipIndex }) => {
-  const filteredState = {
-    url,
-    currentClipIndex,
-    clips
-  };
+export const loadState = () => {
+  try {
+    return decode(
+      new URL(window.location.href).searchParams.get("state") || ""
+    ) as SavedState;
+  } catch (e) {
+    return {} as SavedState;
+  }
+};
 
-  history.replaceState(null, null, `?state=${encode(filteredState)}`);
+export const saveState = (state: SavedState) => {
+  history.replaceState(null, document.title, `?state=${encode(state)}`);
 };
