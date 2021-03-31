@@ -2,7 +2,7 @@
   import EditClip from './EditClip.svelte'
   import { downloadAll, getImageUrl, loadState, saveState } from "../utils";
   import { nanoid } from "nanoid";
-  import type {Clip} from '../types'
+  import type { Clip } from '../types'
 
   const initialState = loadState();
 

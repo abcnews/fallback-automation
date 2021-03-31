@@ -1,13 +1,7 @@
 import App from "./components/App.svelte";
-// import { saveState } from "./utils";
 
-const PROJECT_NAME = "fallback-automation";
-const ROOT_SELECTOR = `[data-${PROJECT_NAME}-root]`;
+const app = new App({
+  target: document.body
+});
 
-function init() {
-  new App({
-    target: document.querySelector(ROOT_SELECTOR)
-  });
-}
-
-init();
+export default app;
