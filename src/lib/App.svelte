@@ -1,14 +1,32 @@
+<script lang="ts" context="module">
+  import type { Load } from '@sveltejs/kit';
+
+  export const load: Load = ({ page }) => {
+    return { props: {} };
+  };
+</script>
+
 <script lang="ts">
-  import EditClip from './EditClip.svelte'
-  import { downloadAll, getImageUrl, loadState, saveState } from "../utils";
-  import { nanoid } from "nanoid";
-  import type { Clip } from '../types'
+  import EditClip from '$lib/EditClip.svelte';
+  import { browser } from '$app/env';
+  import { onMount } from 'svelte';
+  import { downloadAll, getImageUrl, loadState, saveState } from '../utils';
+  import { nanoid } from 'nanoid';
+  import type { Clip } from '../types';
 
-  const initialState = loadState();
+  let url: string | undefined;
+  let clips: Clip[];
+  let selectedClip: Clip | undefined;
+  let initialStateLoaded = false;
 
-  let url: string|undefined = initialState.url;
-  let clips: Clip[] = initialState.clips || [];
-  let selectedClip: Clip | undefined = clips[0];
+  onMount(() => {
+    const initialState = loadState();
+    url = initialState.url;
+    clips = initialState.clips || [];
+    selectedClip = clips[0];
+    initialStateLoaded = true;
+  });
+
   let shouldShowPreview: boolean = false;
 
   const addClip = () => {
@@ -18,13 +36,12 @@
   };
 
   const selectClip = (id: string | number) => {
-    selectedClip =
-      typeof id === "number" ? clips[id] : clips.find(d => d.id === id);
+    selectedClip = typeof id === 'number' ? clips[id] : clips.find((d) => d.id === id);
     shouldShowPreview = false;
   };
 
   const removeClip = (id: string) => {
-    const index = clips.findIndex(d => d.id === id);
+    const index = clips.findIndex((d) => d.id === id);
 
     if (index > -1 && selectedClip) {
       if (index === clips.indexOf(selectedClip)) {
@@ -35,9 +52,9 @@
   };
 
   // This is a farily ugly hack to make the clips list update when the selected clip is.
-  $: if(selectedClip) clips = clips;
+  $: if (selectedClip) clips = clips;
 
-  $: saveState({    url, clips  });
+  $: if (browser && initialStateLoaded) saveState({ url, clips });
 </script>
 
 <div class="header">
@@ -56,8 +73,7 @@
           /></svg
         >
         <p>
-          Take clippings from a website by specifying CSS selectors for the
-          areas you want to clip.
+          Take clippings from a website by specifying CSS selectors for the areas you want to clip.
         </p>
       </div>
     </div>
@@ -72,7 +88,7 @@
       </div>
       <div class="column">
         <button
-          on:click={e => {
+          on:click={(e) => {
             e.preventDefault();
             downloadAll(url, clips);
           }}
@@ -86,7 +102,7 @@
 
 <div>
   <div class="page">
-    {#if clips.length > 0}
+    {#if clips?.length > 0}
       <div class="row">
         <div class="column wide-2">
           <h2>Clips</h2>
@@ -109,13 +125,9 @@
           {#if selectedClip}
             <EditClip bind:clip={selectedClip} />
             <button on:click={() => (shouldShowPreview = !shouldShowPreview)}>
-              {shouldShowPreview ? "Hide" : "Show"} Clip Preview
+              {shouldShowPreview ? 'Hide' : 'Show'} Clip Preview
             </button>
-            <button
-              on:click={() => selectedClip && removeClip(selectedClip.id)}
-            >
-              Delete
-            </button>
+            <button on:click={() => selectedClip && removeClip(selectedClip.id)}> Delete </button>
           {:else}
             <p>Select a clip to edit.</p>
           {/if}
@@ -131,8 +143,7 @@
               />
             {:else}
               <p>
-                You must provide a selector for your clip and the URL of the
-                page to take it from.
+                You must provide a selector for your clip and the URL of the page to take it from.
               </p>
             {/if}
           {/if}
@@ -156,8 +167,8 @@
   }
 
   :global(html, body) {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+      'Open Sans', 'Helvetica Neue', sans-serif;
     margin: 0;
     padding: 0;
     color: var(--text);

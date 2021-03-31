@@ -1,11 +1,6 @@
-# dependencies
-/node_modules
-
-# output
-/dist
-
-# misc
 .DS_Store
-npm-debug.log
-
+node_modules
+/.svelte
+/build
+/functions
 .now

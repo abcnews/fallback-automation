@@ -1,11 +1,11 @@
-import chrome from "chrome-aws-lambda";
+import chrome from 'chrome-aws-lambda';
 
 const LOCAL_EXECUTABLE =
-  process.platform === "win32"
-    ? "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-    : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+    : '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
-export const IS_DEV = process.env.NODE_ENV === "development";
+export const IS_DEV = process.env.NODE_ENV === 'development';
 
 export const DEFAULT_TTL = 86400;
 export const DEFAULT_VIEWPORT_WIDTH = 480;

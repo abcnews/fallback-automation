@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type {Clip} from '../types'
+  import type { Clip } from '../types';
   export let clip: Clip;
 </script>
 
@@ -38,8 +38,8 @@
     margin-right: 1rem;
   }
 
-  input[type="text"],
-  input[type="number"] {
+  input[type='text'],
+  input[type='number'] {
     margin: 0.2rem 0 0.8rem;
     font-size: 1rem;
     padding: 0.2rem;
