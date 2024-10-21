@@ -6,8 +6,6 @@ async function getBrowser() {
 
   const isLocal = env.IS_LOCAL === '1';
 
-  console.log('isLocal :>> ', isLocal);
-
   const args = [...(isLocal? puppeteer.defaultArgs(): chromium.args), '--hide-scrollbars', '--disable-web-security'];
   const defaultViewport = chromium.defaultViewport;
   const executablePath = isLocal ? env.BROWSER_PATH : await chromium.executablePath(
@@ -24,24 +22,20 @@ async function getBrowser() {
 }
 
 /**
- * 
+ *
  * @param {string} url The URL to screenshot
  * @param {string} [selector] A CSS selector for the element to screenshot (default: `'body'`)
- * @param {number} [width] Set the viewport width before taking screenshot (default: `1200`)
+ * @param {number} [width] Set the viewport width before taking screenshot (default: `810`)
+ * @param {number} [height] Set the viewport height before taking screenshot (default: `1080`)
  */
-export async function getScreenshot(url, selector = 'body', width = 1200 ) {
-  const viewport = { width: +width, height: 5000, deviceScaleFactor: 2 };
+export async function getScreenshot(url, selector = 'body', width = 810, height = 1080 ) {
+  const viewport = { width, height, deviceScaleFactor: 2 };
   const browser = await getBrowser();
-  console.log('browser :>> ', browser);
   const page = await browser.newPage();
-  console.log('page :>> ', page);
   await page.setViewport(viewport);
-  console.log('viewport is set :>> ');
   await page.goto(url, { waitUntil: "networkidle0" });
-  console.log('navigated :>> ');
   const el = await page.waitForSelector(selector);
   const file = await el?.screenshot();
-  
   return file;
 }
 
