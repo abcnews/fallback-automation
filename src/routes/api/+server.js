@@ -2,6 +2,10 @@
 import { getScreenshot } from '$lib/browser.server.js';
 import { error } from '@sveltejs/kit';
 
+export const config = {
+  maxDuration: 60
+}
+
 export let GET = async ({url}) => {
 
   const target = url.searchParams.get('url');
