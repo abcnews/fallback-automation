@@ -1,5 +1,7 @@
 <script>
 	import { browser } from '$app/environment';
+	import Loading from '$lib/Loading.svelte';
+	import { download, fetchImageBlob } from '$lib/utils';
 	import { onMount } from 'svelte';
 
 	/** @type {string} */
@@ -10,62 +12,54 @@
 	/** @type {string} */
 	let selector = '';
 	/** @type {number} */
-	let width = 500;
+	let width = 810;
+	/** @type {number} */
+	let height = 1080;
 
-	/** @type {number|null} */
+	/** @type {import('../lib/utils.js').Item | null} */
 	let preview = null;
 
 	/** @type {HTMLDialogElement}*/
 	let previewModal;
 
-	/**
-	 * Get a URL for a screenshot image
-	 * @param {string} url The page URL
-	 * @param {string} selector The CSS selector
-	 * @param {number} width Viewport width
-	 */
-	const getImageUrl = (url, selector, width) => {
-		return `/api?url=${url}&selector=${selector}&width=${width}`;
-	};
+	let downloadingAll = false;
 
 	/**
-	 * Fetch an image from the server
-	 * @param {string} url
-	 * @param {string} selector
-	 * @param {number} width
+	 * @param {number} i
 	 */
-	const fetchImageBlob = (url, selector, width) => {
-		return fetch(getImageUrl(url, selector, width)).then((res) => {
-			if (!res.ok) throw new Error('Could not generate screenshot');
-			return res.blob();
-		});
+	const removeItem = (i) => {
+		items = items.filter((_, idx) => i !== idx);
+		localStorage.setItem('items', JSON.stringify(items));
 	};
 
 	const addItem = () => {
-		items = [
-			...items,
-			{
-				url,
-				name,
-				selector,
-				width,
-				file: fetchImageBlob(url, selector, width)
-			}
-		];
-		preview = items.length - 1;
+		const item = {
+			url,
+			name,
+			selector,
+			width,
+			height,
+			file: fetchImageBlob(url, selector, width, height)
+		};
+		items = [...items, item];
+		preview = item;
 		name = '';
 		selector = '';
 
 		localStorage.setItem('items', JSON.stringify(items));
-		localStorage.setItem('preview', String(preview));
 		localStorage.setItem('name', String(name));
 		localStorage.setItem('selector', String(selector));
 		localStorage.setItem('width', String(width));
+		localStorage.setItem('height', String(height));
 	};
 
 	$: if (browser && url.length) localStorage.setItem('url', url);
 
-	/** @type {{url: string;name: string;selector: string; width: number, file: Promise<Blob>}[]}*/
+	$: if (preview && preview.file === null) {
+		preview.file = fetchImageBlob(preview.url, preview.selector, preview.width, preview.height);
+	}
+
+	/** @type {import('../lib/utils.js').Item[]}*/
 	let items = [];
 
 	onMount(() => {
@@ -73,13 +67,13 @@
 		name = localStorage.getItem('name') || name;
 		selector = localStorage.getItem('selector') || selector;
 		if (localStorage.getItem('width')) width = +(localStorage.getItem('width') || width);
-		const maybePreview = localStorage.getItem('preview');
-		if (maybePreview) preview = parseInt(maybePreview, 10) || null;
+		if (localStorage.getItem('height')) height = +(localStorage.getItem('height') || height);
+
 		try {
 			const maybeItems = localStorage.getItem('items');
 			if (maybeItems) {
 				items = JSON.parse(maybeItems);
-				items.forEach((d) => (d.file = fetchImageBlob(d.url, d.selector, d.width)));
+				items.forEach((d) => (d.file = null));
 			}
 		} catch (e) {
 			localStorage.removeItem('items');
@@ -105,72 +99,105 @@
 		>
 
 		<label for="item-width"
-			>Viewport width <input
-				required
-				bind:value={width}
-				id={`item-width`}
-				type="number"
-				min="300"
-				step="10"
-				max="1900"
-			/></label
+			>Viewport <div>
+				<label for="item-width">Width</label>
+				<input
+					required
+					bind:value={width}
+					id={`item-width`}
+					type="number"
+					min="300"
+					step="10"
+					max="1900"
+				/>
+				<label for="item-height">Height</label>
+				<input
+					required
+					bind:value={height}
+					id={`item-height`}
+					type="number"
+					min="300"
+					step="10"
+					max="1900"
+				/>
+			</div></label
 		>
 		<div>
 			<button type="submit">Add</button>
 		</div>
 	</form>
-	<table>
-		<thead>
-			<tr>
-				<th>URL</th>
-				<th>File name</th>
-				<th>Selector</th>
-				<th>Width</th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each items as { url, name, selector, width }, i}
+	{#if items.length}
+		<div>
+			<button
+				disabled={downloadingAll}
+				on:click={async (e) => {
+					downloadingAll = true;
+					Promise.all(items.map(download)).then(() => (downloadingAll = false));
+				}}
+				>{#if downloadingAll}Generating ...{:else}Download All{/if}</button
+			>
+		</div>
+		<table>
+			<thead>
 				<tr>
-					<th>{url}</th>
-					<td>{name}</td>
-					<td>{selector}</td>
-					<td>{width}</td>
-					<td class="actions">
-						<button on:click={() => (items = items.filter((d, idx) => i !== idx))}>Remove</button>
-						<button
-							on:click={() => {
-								preview = i;
-								previewModal.showModal();
-							}}>Preview</button
-						>
-					</td>
+					<th>URL</th>
+					<th>File name</th>
+					<th>Selector</th>
+					<th>Width</th>
+					<th></th>
 				</tr>
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				{#each items as { url, name, selector, width }, i}
+					<tr>
+						<th>{url}</th>
+						<td>{name}</td>
+						<td>{selector}</td>
+						<td>{width}</td>
+						<td class="actions">
+							<button
+								on:click={() => {
+									preview = items[i];
+									previewModal.showModal();
+								}}>View</button
+							>
+							<button on:click={() => removeItem(i)}>Remove</button>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	{/if}
 </div>
-
 <dialog bind:this={previewModal}>
-	{#if preview !== null}
+	{#if preview && preview.file}
 		<header>
 			<div>
-				<h2>Preview: {items[preview].name}</h2>
-				<pre>{items[preview].selector}</pre>
+				<h2>Preview: {preview.name}</h2>
+				<pre>{preview.selector}</pre>
 			</div>
-			<button on:click={() => previewModal.close()}>Close</button>
+			<div>
+				{#await preview.file}
+					<button on:click={() => download(preview)}>Download</button>
+				{/await}
+				<button on:click={() => previewModal.close()}>Close</button>
+			</div>
 		</header>
-		{#await items[preview].file}
-			<p>Loading ...</p>
-		{:then blob}
-			<img
-				src={URL.createObjectURL(blob)}
-				alt="Screenshot of
-  element {items[preview].selector} on {url}"
-			/>
-		{:catch}
-			<p>Error creating screenshot</p>
-		{/await}
+		<div class="image-container">
+			{#await preview.file}
+				<Loading>
+					<p>Generating screenshot ...</p>
+				</Loading>
+			{:then blob}
+				<img
+					src={URL.createObjectURL(blob)}
+					alt="Screenshot of
+  element {preview.selector} on {url}"
+				/>
+			{:catch}
+				<p>Error creating screenshot</p>
+			{/await}
+		</div>
 	{/if}
 </dialog>
 
@@ -182,11 +209,19 @@
 	}
 
 	input {
-		font-size: var(--step-2);
+		font-size: var(--step-0);
 		border-radius: 5px;
 		border: 1px solid #ccc;
 		display: block;
 		margin-top: var(--space-2xs);
+		padding: var(--space-2xs);
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	[for='item-width'] input {
+		display: inline;
+		width: auto;
 	}
 
 	table {
@@ -217,6 +252,10 @@
 		font-weight: bold;
 		font-size: var(--step-0);
 		padding: var(--space-2xs) var(--space-s);
+	}
+
+	td.actions {
+		text-align: right;
 	}
 
 	td.actions button {
@@ -262,5 +301,11 @@
 	dialog img {
 		display: block;
 		margin: var(--space-s) auto;
+		max-width: 100%;
+		height: auto;
+	}
+
+	.image-container {
+		margin: var(--space-s);
 	}
 </style>
