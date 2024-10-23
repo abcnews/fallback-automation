@@ -16,13 +16,13 @@ You can (optionally) name the images to be captured. You can also (optionally; d
 
 ## Development
 
-To run locally, a local version of the Google Chrome browser is required. It is assumed the browser is installed in the standard location on MacOS or Windows.
+To run locally, a local version of the Google Chrome browser is required.
 
 ```
 git clone https://github.com/abcnews/fallback-automation.git
 cd fallback-automation
 npm i
-npm dev
+export IS_LOCAL=1 export BROWSER_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm dev
 ```
 
 ## Authors
