@@ -30,6 +30,7 @@
 	"type": "module",
 	"dependencies": {
 		"@sparticuz/chromium-min": "^130.0.0",
+		"cross-blob": "^3.0.2",
 		"puppeteer-core": "^23.6.0"
 	}
 }
