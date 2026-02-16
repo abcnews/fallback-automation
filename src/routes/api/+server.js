@@ -1,16 +1,17 @@
 import { getScreenshot } from '$lib/browser.server.js';
 import { error } from '@sveltejs/kit';
 
-export const config = {
-	maxDuration: 60
-};
+export const config = { maxDuration: 60 };
 
 export let GET = async ({ url }) => {
 	const target = url.searchParams.get('url');
 	const selector = url.searchParams.get('selector') || 'body';
 	const width = +(url.searchParams.get('width') || '0') || undefined;
-	const height = +(url.searchParams.get('width') || '0') || undefined;
+	const height = +(url.searchParams.get('height') || '0') || undefined;
 
+	if (!target) {
+		return error(404, 'URL must be provided.');
+	}
 	if (!target) {
 		return error(404, 'URL must be provided.');
 	}
@@ -22,8 +23,4 @@ export let GET = async ({ url }) => {
 	}
 
 	return new Response(Buffer.from(screenshot));
-};
-
-export let OPTIONS = async () => {
-	return new Response('ok');
 };
